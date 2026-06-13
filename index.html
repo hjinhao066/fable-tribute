@@ -145,19 +145,38 @@
   .deed.left{ left:0; text-align:right; }
   .deed.right{ left:50%; text-align:left; }
 
-  .node{ position:absolute; top:30px; width:22px; height:22px; border-radius:50%; background:var(--ink-2); border:2px solid var(--gold-deep); z-index:3; transition:all .7s ease; }
-  .node::after{ content:""; position:absolute; inset:-4px; border-radius:50%; border:2px solid var(--gold-lit); opacity:0; pointer-events:none; }
-  .deed.left .node{ right:-11px; }
-  .deed.right .node{ left:-11px; }
-  .deed.in .node{ border-color:var(--gold-lit); box-shadow:0 0 0 7px rgba(201,161,74,.10), 0 0 30px 6px rgba(236,200,120,.75); }
-  .deed.in.done .node{ background:radial-gradient(circle at 36% 30%, #fff5da, var(--gold-lit) 42%, var(--gold) 100%); border-color:#fff5da; }
-  .deed.in.done .node::after{ animation:ignite 1.5s cubic-bezier(.2,.7,.2,1) forwards; }
-  .deed.in.progress .node{ background:var(--ink-2); animation:pulse 2.2s ease-in-out infinite; }
-  .deed.in.progress .node::after{ animation:ignite 1.5s ease-out forwards; }
-  .deed.paused .node{ border-color:var(--ash); }
-  .deed.in.paused .node{ box-shadow:0 0 12px rgba(140,128,98,.35); background:var(--thread); border-color:var(--ash); }
-  @keyframes ignite{ 0%{ transform:scale(.45); opacity:.95; } 65%{ opacity:.3; } 100%{ transform:scale(3.8); opacity:0; } }
-  @keyframes pulse{ 0%,100%{box-shadow:0 0 0 7px rgba(201,161,74,.10),0 0 20px 4px rgba(236,200,120,.6);} 50%{box-shadow:0 0 0 13px rgba(201,161,74,.04),0 0 34px 8px rgba(236,200,120,.95);} }
+  /* dormant orb */
+  .node{ position:absolute; top:30px; width:16px; height:16px; border-radius:50%; background:var(--ink-2); border:1.5px solid var(--gold-deep); z-index:3;
+    transition:border-color .55s ease, background .55s ease, transform .55s cubic-bezier(.2,.8,.2,1), box-shadow .55s ease; }
+  /* soft radiant bloom (behind the orb) */
+  .node::before{ content:""; position:absolute; left:50%; top:50%; width:132px; height:132px; border-radius:50%; z-index:-1;
+    transform:translate(-50%,-50%) scale(.28);
+    background:radial-gradient(circle,
+      rgba(255,245,218,.85) 0%, rgba(236,200,120,.42) 15%, rgba(201,161,74,.20) 33%, rgba(201,161,74,.06) 52%, transparent 72%);
+    opacity:0; pointer-events:none;
+    transition:opacity .75s ease, transform .75s cubic-bezier(.2,.8,.2,1); }
+  /* radiating rays */
+  .node::after{ content:""; position:absolute; left:50%; top:50%; width:104px; height:104px; border-radius:50%; z-index:-1;
+    transform:translate(-50%,-50%) scale(.5) rotate(0deg);
+    background:repeating-conic-gradient(from 0deg, rgba(255,238,196,.5) 0deg 1.3deg, transparent 1.3deg 15deg);
+    -webkit-mask:radial-gradient(circle, transparent 11%, #000 24%, transparent 68%);
+            mask:radial-gradient(circle, transparent 11%, #000 24%, transparent 68%);
+    opacity:0; pointer-events:none; transition:opacity .9s ease; }
+  .deed.left .node{ right:-8px; }
+  .deed.right .node{ left:-8px; }
+
+  /* LIT — driven by the scroll progress thread, reversible */
+  .deed.lit .node{ border-color:#fff5da; transform:scale(1.18);
+    background:radial-gradient(circle at 37% 31%, #fff9ec 0%, var(--gold-lit) 46%, var(--gold) 100%);
+    box-shadow:0 0 11px 1px rgba(236,200,120,.7); }
+  .deed.lit .node::before{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+  .deed.lit .node::after{ opacity:.65; transform:translate(-50%,-50%) scale(1); animation:rayspin 24s linear infinite; }
+  @keyframes rayspin{ from{ transform:translate(-50%,-50%) scale(1) rotate(0deg);} to{ transform:translate(-50%,-50%) scale(1) rotate(360deg);} }
+
+  /* paused deeds light dim & ashen */
+  .deed.lit.paused .node{ background:var(--thread); border-color:var(--ash); transform:scale(1.06); box-shadow:0 0 9px 1px rgba(150,140,110,.4); }
+  .deed.lit.paused .node::before{ opacity:.45; background:radial-gradient(circle, rgba(196,186,156,.5) 0%, rgba(140,128,98,.16) 34%, transparent 70%); }
+  .deed.lit.paused .node::after{ opacity:0; animation:none; }
 
   .deed .date{ font-family:"EB Garamond",serif; letter-spacing:.24em; font-size:.72rem; text-transform:uppercase; color:var(--gold); }
   .deed h3{ font-family:"Cormorant Garamond",serif; font-weight:600; font-size:1.78rem; line-height:1.12; margin:6px 0 2px; color:var(--parchment); }
@@ -192,7 +211,7 @@
     .thread{ left:18px; }
     .thread .fill{ }
     .deed{ width:100%; left:0 !important; text-align:left !important; padding:22px 10px 22px 46px; }
-    .deed.left .node, .deed.right .node{ left:8px; right:auto; }
+    .deed.left .node, .deed.right .node{ left:10px; right:auto; }
     .deed.left .seal{ flex-direction:row; }
     .stats{ gap:34px; }
   }
@@ -334,7 +353,7 @@ if(location.search.indexOf('still=1')>-1) document.documentElement.classList.add
 const io = new IntersectionObserver((es)=>{
   es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
 },{threshold:.25});
-document.querySelectorAll('.deed,.reveal').forEach(el=>{ if(FORCE) el.classList.add('in'); else io.observe(el); });
+document.querySelectorAll('.deed,.reveal').forEach(el=>{ if(FORCE){ el.classList.add('in'); el.classList.add('lit'); } else io.observe(el); });
 if(FORCE){ document.querySelector('.hero').style.minHeight='auto'; document.querySelector('.hero').style.padding='60px 24px'; }
 if(location.search.indexOf('only=ep')>-1){ ['.hero','.stats','.scroll-title','.timeline'].forEach(s=>{const e=document.querySelector(s); if(e) e.style.display='none';}); document.querySelectorAll('.reveal').forEach(e=>e.classList.add('in')); }
 
@@ -349,19 +368,45 @@ const cIO = new IntersectionObserver((es)=>{
 },{threshold:.6});
 document.querySelectorAll('.num[data-to]').forEach(el=>cIO.observe(el));
 
-/* ---------- gold thread fill ---------- */
+/* ---------- gold thread fill drives node ignition (reversible) ---------- */
 const fill = document.getElementById('threadFill');
 const tl = document.querySelector('.timeline');
-function onScroll(){
-  const r = tl.getBoundingClientRect();
-  const vh = window.innerHeight;
-  const total = r.height - vh*0.4;
-  const passed = Math.min(Math.max(vh*0.5 - r.top, 0), total);
-  fill.style.height = (total>0 ? (passed/total)*r.height : 0) + 'px';
+const allDeeds = [...document.querySelectorAll('.deed')];
+let nodeYs = [], tlTopAbs = 0, tlH = 0;
+const TRIGGER = 0.6; // progress point at 60% down the viewport
+
+function measure(){
+  const sY = window.scrollY;
+  tlTopAbs = tl.getBoundingClientRect().top + sY;
+  tlH = tl.offsetHeight;
+  nodeYs = allDeeds.map(d=>{
+    const n = d.querySelector('.node');
+    const r = n.getBoundingClientRect();
+    return (r.top + sY + r.height/2) - tlTopAbs; // node centre, relative to timeline top
+  });
 }
-window.addEventListener('scroll', onScroll, {passive:true});
-window.addEventListener('resize', onScroll);
-onScroll();
+function update(){
+  const triggerAbs = window.scrollY + window.innerHeight*TRIGGER;
+  const fillPx = Math.min(Math.max(triggerAbs - tlTopAbs, 0), tlH);
+  fill.style.height = fillPx + 'px';
+  for(let i=0;i<allDeeds.length;i++){
+    if(fillPx >= nodeYs[i]) allDeeds[i].classList.add('lit');
+    else allDeeds[i].classList.remove('lit');
+  }
+}
+let ticking=false;
+function onScroll(){ if(!ticking){ ticking=true; requestAnimationFrame(()=>{ update(); ticking=false; }); } }
+if(!FORCE){
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', ()=>{ measure(); update(); });
+  window.addEventListener('load', ()=>{ measure(); update(); });
+  measure(); update();
+  const sy = new URLSearchParams(location.search).get('sy');
+  if(sy){ window.addEventListener('load',()=>{ measure(); window.scrollTo(0, +sy); update(); }); }
+  if(location.search.indexOf('diag=1')>-1){ window.addEventListener('load',()=>{ measure();
+    const lit=(px)=>nodeYs.filter(y=>px>=y).length;
+    document.body.setAttribute('data-diag', JSON.stringify({tlH:Math.round(tlH), nodes:nodeYs.map(Math.round), litAt:{ '0':lit(0),'half':lit(tlH/2),'full':lit(tlH) }})); }); }
+}
 
 /* ---------- ember particle field ---------- */
 const cv = document.getElementById('embers');
