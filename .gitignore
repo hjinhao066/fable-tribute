@@ -1,0 +1,5 @@
+# scratch screenshots from headless self-checks
+_*.png
+
+# macOS
+.DS_Store
